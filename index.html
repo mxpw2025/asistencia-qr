@@ -68,6 +68,8 @@
       font-weight: 600;
       display: none;
       animation: slideIn 0.3s ease;
+      word-wrap: break-word;
+      font-size: 14px;
     }
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(-10px); }
@@ -88,6 +90,18 @@
       padding: 10px;
       background: #f8f9fa;
       border-radius: 8px;
+      word-break: break-all;
+    }
+    .debug-info {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f1f3f5;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #666;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
     }
     .loading {
       display: inline-block;
@@ -120,6 +134,7 @@
     
     <div id="reader"></div>
     <div id="message" class="message"></div>
+    <div id="debugInfo" class="debug-info"></div>
     
     <div class="device-id">
       🔒 ID del Dispositivo: <span id="deviceId"></span>
@@ -131,6 +146,16 @@
     
     let html5QrCode = null;
     let isScanning = false;
+    let debugLog = [];
+    
+    function addDebugLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      debugLog.push(`[${timestamp}] ${message}`);
+      const debugDiv = document.getElementById('debugInfo');
+      debugDiv.innerHTML = debugLog.join('<br>');
+      debugDiv.style.display = 'block';
+      console.log(message);
+    }
     
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
@@ -143,6 +168,8 @@
     
     const deviceId = getDeviceId();
     document.getElementById('deviceId').textContent = deviceId;
+    addDebugLog('✅ Sistema iniciado');
+    addDebugLog('🔑 Device ID: ' + deviceId);
     
     document.getElementById('patente').addEventListener('input', function(e) {
       this.value = this.value.toUpperCase();
@@ -164,6 +191,8 @@
         return;
       }
       
+      addDebugLog('📷 Iniciando escaneo...');
+      
       if (!isScanning) {
         document.getElementById('reader').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
@@ -178,15 +207,16 @@
           document.getElementById('scanBtn').innerHTML = '<span class="loading"></span> Escaneando...';
           document.getElementById('scanBtn').disabled = true;
           showMessage('Apunta la cámara al código QR', 'info');
+          addDebugLog('✅ Cámara activada');
         }).catch(err => {
-          showMessage('Error al acceder a la cámara', 'error');
-          console.error(err);
+          showMessage('Error al acceder a la cámara: ' + err.message, 'error');
+          addDebugLog('❌ Error cámara: ' + err.message);
         });
       }
     }
     
     function onScanSuccess(decodedText) {
-      console.log('QR escaneado:', decodedText);
+      addDebugLog('✅ QR escaneado: ' + decodedText.substring(0, 20) + '...');
       
       html5QrCode.stop().then(() => {
         isScanning = false;
@@ -202,7 +232,15 @@
       const nombre = document.getElementById('nombre').value.trim();
       const patente = document.getElementById('patente').value.trim().toUpperCase();
       
+      if (!nombre || !patente) {
+        showMessage('Por favor completa nombre y patente', 'error');
+        return;
+      }
+      
       showMessage('Registrando asistencia...', 'info');
+      addDebugLog('📤 Preparando envío...');
+      addDebugLog('👤 Nombre: ' + nombre);
+      addDebugLog('🚗 Patente: ' + patente);
       
       // Construir URL con parámetros GET
       const url = SCRIPT_URL + 
@@ -211,29 +249,50 @@
                   '&patente=' + encodeURIComponent(patente) + 
                   '&qrData=' + encodeURIComponent(qrData);
       
-      console.log('Enviando a:', url);
+      addDebugLog('🔗 URL: ' + url.substring(0, 100) + '...');
+      addDebugLog('⏳ Enviando petición...');
       
       fetch(url, {
         method: 'GET',
         redirect: 'follow'
       })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Respuesta:', data);
+      .then(response => {
+        addDebugLog('📥 Respuesta recibida: Status ' + response.status);
         
-        if (data.success) {
-          showMessage('✓ ' + data.message, 'success');
-          setTimeout(() => {
-            document.getElementById('nombre').value = '';
-            document.getElementById('patente').value = '';
-          }, 3000);
-        } else {
-          showMessage(data.message, 'warning');
+        if (!response.ok) {
+          throw new Error('HTTP Error ' + response.status);
+        }
+        
+        return response.text();
+      })
+      .then(text => {
+        addDebugLog('📄 Contenido: ' + text.substring(0, 100));
+        
+        try {
+          const data = JSON.parse(text);
+          addDebugLog('✅ JSON parseado correctamente');
+          
+          if (data.success) {
+            showMessage('✓ ' + data.message, 'success');
+            addDebugLog('✅ ÉXITO: ' + data.message);
+            setTimeout(() => {
+              document.getElementById('nombre').value = '';
+              document.getElementById('patente').value = '';
+            }, 3000);
+          } else {
+            showMessage(data.message, 'warning');
+            addDebugLog('⚠️ ADVERTENCIA: ' + data.message);
+          }
+        } catch (e) {
+          addDebugLog('❌ Error al parsear JSON: ' + e.message);
+          addDebugLog('📄 Respuesta completa: ' + text);
+          throw new Error('Respuesta no es JSON válido');
         }
       })
       .catch(error => {
-        console.error('Error:', error);
-        showMessage('Error al registrar. Revisa la consola.', 'error');
+        addDebugLog('❌ ERROR FINAL: ' + error.message);
+        addDebugLog('🔍 Tipo de error: ' + error.name);
+        showMessage('Error: ' + error.message, 'error');
       });
     }
     
@@ -246,11 +305,71 @@
       if (type !== 'info') {
         setTimeout(() => {
           messageDiv.style.display = 'none';
-        }, 5000);
+        }, 8000);
       }
     }
     
-    console.log('Sistema cargado. Device ID:', deviceId);
+    addDebugLog('✅ Sistema listo');
   </script>
 </body>
 </html>
+```
+
+---
+
+## 📱 INSTRUCCIONES DE PRUEBA
+
+### Paso 1: Subir el nuevo HTML
+
+1. Copia TODO el código de arriba
+2. Reemplaza tu `index.html` en GitHub
+3. Espera 1-2 minutos
+4. Actualiza la página en tu celular
+
+### Paso 2: Realizar la prueba
+
+1. Completa nombre y patente
+2. Escanea el código QR
+3. **Verás un cuadro gris al final con información de diagnóstico**
+4. Toma una **captura de pantalla** de ese cuadro gris
+
+### Paso 3: Envíame la información
+
+El cuadro gris mostrará exactamente qué está fallando. Por ejemplo:
+```
+[14:30:15] ✅ Sistema iniciado
+[14:30:15] 🔑 Device ID: DEV_123...
+[14:30:20] 📷 Iniciando escaneo...
+[14:30:22] ✅ QR escaneado: ASISTENCIA...
+[14:30:22] 📤 Preparando envío...
+[14:30:23] ❌ ERROR FINAL: Network error
+```
+
+---
+
+## 🔍 VERIFICACIONES ADICIONALES
+
+Mientras tanto, verifica estas cosas en tu **Apps Script**:
+
+### Verificación 1: ¿Está desplegado correctamente?
+
+1. Ve a [script.google.com](https://script.google.com)
+2. Click en **"Implementar"** → **"Administrar implementaciones"**
+3. Verifica que diga:
+   - **Estado:** "Activo"
+   - **Tipo:** "Aplicación web"
+   - **Ejecutar como:** "Yo"
+   - **Quién tiene acceso:** "Cualquier usuario"
+
+### Verificación 2: ¿La URL es correcta?
+
+La URL debe terminar en `/exec` y debe ser exactamente:
+```
+https://script.google.com/macros/s/AKfycbxSJK1nx7_wfe_Z231s9imv0sFhva_U7tWLhTtBaW-vhCprfY-mVtGJx5Bw2xxSeXiCzA/exec
+```
+
+### Verificación 3: Probar la URL directamente
+
+Desde tu celular, abre Chrome y pega esta URL directamente:
+```
+https://script.google.com/macros/s/AKfycbxSJK1nx7_wfe_Z231s9imv0sFhva_U7tWLhTtBaW-vhCprfY-mVtGJx5Bw2xxSeXiCzA/exec?deviceId=TEST123&nombre=Juan&patente=ABC123&qrData=TEST
