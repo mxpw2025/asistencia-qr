@@ -6,12 +6,7 @@
   <title>Asistencia QR</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,7 +16,6 @@
       align-items: center;
       padding: 20px;
     }
-    
     .container {
       background: white;
       border-radius: 20px;
@@ -30,33 +24,10 @@
       max-width: 500px;
       width: 100%;
     }
-    
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-      text-align: center;
-      font-size: 28px;
-    }
-    
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #555;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    
+    h1 { color: #333; margin-bottom: 10px; text-align: center; font-size: 28px; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; font-size: 14px; }
     input {
       width: 100%;
       padding: 14px;
@@ -65,20 +36,12 @@
       font-size: 16px;
       transition: all 0.3s;
     }
-    
     input:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    
-    #reader {
-      margin: 20px 0;
-      border-radius: 10px;
-      overflow: hidden;
-      display: none;
-    }
-    
+    #reader { margin: 20px 0; border-radius: 10px; overflow: hidden; display: none; }
     button {
       width: 100%;
       padding: 16px;
@@ -92,22 +55,11 @@
       transition: transform 0.2s, box-shadow 0.2s;
       margin-top: 10px;
     }
-    
     button:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
     }
-    
-    button:active:not(:disabled) {
-      transform: translateY(0);
-    }
-    
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
+    button:disabled { background: #ccc; cursor: not-allowed; }
     .message {
       margin-top: 20px;
       padding: 16px;
@@ -117,57 +69,17 @@
       display: none;
       animation: slideIn 0.3s ease;
     }
-    
     @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    
-    .success {
-      background: #d4edda;
-      color: #155724;
-      border: 2px solid #c3e6cb;
-    }
-    
-    .success:before {
-      content: "✓ ";
-      font-size: 20px;
-    }
-    
-    .error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 2px solid #f5c6cb;
-    }
-    
-    .error:before {
-      content: "✕ ";
-      font-size: 20px;
-    }
-    
-    .info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 2px solid #bee5eb;
-    }
-    
-    .warning {
-      background: #fff3cd;
-      color: #856404;
-      border: 2px solid #ffeaa7;
-    }
-    
-    .warning:before {
-      content: "⚠ ";
-      font-size: 20px;
-    }
-    
+    .success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+    .success:before { content: "✓ "; font-size: 20px; }
+    .error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+    .error:before { content: "✕ "; font-size: 20px; }
+    .warning { background: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
+    .warning:before { content: "⚠ "; font-size: 20px; }
+    .info { background: #d1ecf1; color: #0c5460; border: 2px solid #bee5eb; }
     .device-id {
       font-size: 11px;
       color: #999;
@@ -177,7 +89,6 @@
       background: #f8f9fa;
       border-radius: 8px;
     }
-    
     .loading {
       display: inline-block;
       width: 20px;
@@ -187,10 +98,7 @@
       border-top-color: #fff;
       animation: spin 1s ease-in-out infinite;
     }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -208,12 +116,9 @@
       <input type="text" id="patente" placeholder="Ej: ABC-123" required style="text-transform: uppercase;">
     </div>
     
-    <button id="scanBtn">
-      📷 Escanear Código QR
-    </button>
+    <button id="scanBtn">📷 Escanear Código QR</button>
     
     <div id="reader"></div>
-    
     <div id="message" class="message"></div>
     
     <div class="device-id">
@@ -222,14 +127,11 @@
   </div>
 
   <script>
-    // URL de tu Google Apps Script (YA CONFIGURADA ✅)
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSJK1nx7_wfe_Z231s9imv0sFhva_U7tWLhTtBaW-vhCprfY-mVtGJx5Bw2xxSeXiCzA/exec';
     
-    // Variables globales
     let html5QrCode = null;
     let isScanning = false;
     
-    // Generar ID único para este dispositivo
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
@@ -239,16 +141,13 @@
       return deviceId;
     }
     
-    // Inicializar al cargar la página
     const deviceId = getDeviceId();
     document.getElementById('deviceId').textContent = deviceId;
     
-    // Convertir patente a mayúsculas automáticamente
     document.getElementById('patente').addEventListener('input', function(e) {
       this.value = this.value.toUpperCase();
     });
     
-    // Configurar el botón de escaneo
     document.getElementById('scanBtn').addEventListener('click', startScan);
     
     function startScan() {
@@ -257,13 +156,11 @@
       
       if (!nombre) {
         showMessage('Por favor ingresa tu nombre', 'error');
-        document.getElementById('nombre').focus();
         return;
       }
       
       if (!patente) {
         showMessage('Por favor ingresa tu patente', 'error');
-        document.getElementById('patente').focus();
         return;
       }
       
@@ -273,46 +170,32 @@
         
         html5QrCode.start(
           { facingMode: "environment" },
-          { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
           onScanSuccess,
-          onScanError
+          () => {} // Ignorar errores de escaneo
         ).then(() => {
           isScanning = true;
-          const btn = document.getElementById('scanBtn');
-          btn.innerHTML = '<span class="loading"></span> Escaneando...';
-          btn.disabled = true;
+          document.getElementById('scanBtn').innerHTML = '<span class="loading"></span> Escaneando...';
+          document.getElementById('scanBtn').disabled = true;
           showMessage('Apunta la cámara al código QR', 'info');
         }).catch(err => {
-          showMessage('Error al acceder a la cámara. Verifica los permisos.', 'error');
-          console.error('Error de cámara:', err);
+          showMessage('Error al acceder a la cámara', 'error');
+          console.error(err);
         });
       }
     }
     
-    function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
       console.log('QR escaneado:', decodedText);
       
-      // Detener el escaneo
       html5QrCode.stop().then(() => {
         isScanning = false;
         document.getElementById('reader').style.display = 'none';
-        const btn = document.getElementById('scanBtn');
-        btn.innerHTML = '📷 Escanear Código QR';
-        btn.disabled = false;
-      }).catch(err => {
-        console.error('Error al detener escáner:', err);
+        document.getElementById('scanBtn').innerHTML = '📷 Escanear Código QR';
+        document.getElementById('scanBtn').disabled = false;
       });
       
-      // Registrar asistencia
       registrarAsistencia(decodedText);
-    }
-    
-    function onScanError(errorMessage) {
-      // Ignorar errores de escaneo continuo
     }
     
     function registrarAsistencia(qrData) {
@@ -321,107 +204,37 @@
       
       showMessage('Registrando asistencia...', 'info');
       
-      const data = {
-        deviceId: deviceId,
-        nombre: nombre,
-        patente: patente,
-        qrData: qrData
-      };
+      // Construir URL con parámetros GET
+      const url = SCRIPT_URL + 
+                  '?deviceId=' + encodeURIComponent(deviceId) + 
+                  '&nombre=' + encodeURIComponent(nombre) + 
+                  '&patente=' + encodeURIComponent(patente) + 
+                  '&qrData=' + encodeURIComponent(qrData);
       
-      console.log('Enviando datos:', data);
+      console.log('Enviando a:', url);
       
-      // Crear un formulario oculto para enviar via POST (método alternativo)
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = SCRIPT_URL;
-      form.target = 'hidden-iframe';
-      
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'data';
-      input.value = JSON.stringify(data);
-      form.appendChild(input);
-      
-      document.body.appendChild(form);
-      
-      // Usar fetch con redirect para poder leer la respuesta
-      fetch(SCRIPT_URL + '?deviceId=' + encodeURIComponent(deviceId) + 
-                        '&nombre=' + encodeURIComponent(nombre) + 
-                        '&patente=' + encodeURIComponent(patente) + 
-                        '&qrData=' + encodeURIComponent(qrData), {
+      fetch(url, {
+        method: 'GET',
         redirect: 'follow'
       })
-      .then(response => response.text())
-      .then(text => {
-        console.log('Respuesta del servidor:', text);
-        try {
-          const result = JSON.parse(text);
-          if (result.success) {
-            showMessage('✓ ' + result.message, 'success');
-            // Limpiar campos después de 3 segundos
-            setTimeout(() => {
-              document.getElementById('nombre').value = '';
-              document.getElementById('patente').value = '';
-            }, 3000);
-          } else {
-            showMessage('✕ ' + result.message, 'warning');
-          }
-        } catch (e) {
-          // Si no es JSON, asumir éxito
-          showMessage('✓ Registrado exitosamente', 'success');
+      .then(response => response.json())
+      .then(data => {
+        console.log('Respuesta:', data);
+        
+        if (data.success) {
+          showMessage('✓ ' + data.message, 'success');
           setTimeout(() => {
             document.getElementById('nombre').value = '';
             document.getElementById('patente').value = '';
           }, 3000);
+        } else {
+          showMessage(data.message, 'warning');
         }
       })
       .catch(error => {
-        console.error('Error al registrar:', error);
-        // Como modo de respaldo, enviar via POST tradicional
-        enviarViaFormulario(data);
+        console.error('Error:', error);
+        showMessage('Error al registrar. Revisa la consola.', 'error');
       });
-    }
-    
-    function enviarViaFormulario(data) {
-      showMessage('Procesando registro...', 'info');
-      
-      // Crear iframe oculto
-      let iframe = document.getElementById('hidden-iframe');
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'hidden-iframe';
-        iframe.name = 'hidden-iframe';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-      }
-      
-      // Escuchar cuando el iframe cargue
-      iframe.onload = function() {
-        setTimeout(() => {
-          showMessage('✓ Registro enviado correctamente', 'success');
-          document.getElementById('nombre').value = '';
-          document.getElementById('patente').value = '';
-        }, 1000);
-      };
-      
-      // Crear formulario
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = SCRIPT_URL;
-      form.target = 'hidden-iframe';
-      
-      // Agregar campos
-      for (let key in data) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = data[key];
-        form.appendChild(input);
-      }
-      
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
     }
     
     function showMessage(text, type) {
@@ -430,16 +243,14 @@
       messageDiv.className = 'message ' + type;
       messageDiv.style.display = 'block';
       
-      if (type === 'success' || type === 'error' || type === 'warning') {
+      if (type !== 'info') {
         setTimeout(() => {
           messageDiv.style.display = 'none';
         }, 5000);
       }
     }
     
-    // Log inicial para confirmar que el script cargó
-    console.log('Sistema de asistencia QR cargado correctamente');
-    console.log('Device ID:', deviceId);
+    console.log('Sistema cargado. Device ID:', deviceId);
   </script>
 </body>
 </html>
