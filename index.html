@@ -197,7 +197,7 @@
       <input type="text" id="patente" placeholder="Ej: ABC-123" required style="text-transform: uppercase;">
     </div>
     
-    <button id="scanBtn" onclick="startScan()">
+    <button id="scanBtn">
       📷 Escanear Código QR
     </button>
     
@@ -211,10 +211,12 @@
   </div>
 
   <script>
-    // IMPORTANTE: REEMPLAZA ESTA URL CON LA TUYA
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSJK1nx7_wfe_Z231s9imv0sFhva_U7tWLhTtBaW-vhCprfY-mVtGJx5Bw2xxSeXiCzA/exec";
-
-prueba;
+    // URL de tu Google Apps Script (YA CONFIGURADA ✅)
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSJK1nx7_wfe_Z231s9imv0sFhva_U7tWLhTtBaW-vhCprfY-mVtGJx5Bw2xxSeXiCzA/exec';
+    
+    // Variables globales
+    let html5QrCode = null;
+    let isScanning = false;
     
     // Generar ID único para este dispositivo
     function getDeviceId() {
@@ -226,16 +228,17 @@ prueba;
       return deviceId;
     }
     
+    // Inicializar al cargar la página
     const deviceId = getDeviceId();
     document.getElementById('deviceId').textContent = deviceId;
-    
-    let html5QrCode;
-    let isScanning = false;
     
     // Convertir patente a mayúsculas automáticamente
     document.getElementById('patente').addEventListener('input', function(e) {
       this.value = this.value.toUpperCase();
     });
+    
+    // Configurar el botón de escaneo
+    document.getElementById('scanBtn').addEventListener('click', startScan);
     
     function startScan() {
       const nombre = document.getElementById('nombre').value.trim();
@@ -274,21 +277,23 @@ prueba;
           showMessage('Apunta la cámara al código QR', 'info');
         }).catch(err => {
           showMessage('Error al acceder a la cámara. Verifica los permisos.', 'error');
-          console.error(err);
+          console.error('Error de cámara:', err);
         });
       }
     }
     
     function onScanSuccess(decodedText, decodedResult) {
+      console.log('QR escaneado:', decodedText);
+      
       // Detener el escaneo
       html5QrCode.stop().then(() => {
         isScanning = false;
         document.getElementById('reader').style.display = 'none';
         const btn = document.getElementById('scanBtn');
-        btn.textContent = '📷 Escanear Código QR';
+        btn.innerHTML = '📷 Escanear Código QR';
         btn.disabled = false;
       }).catch(err => {
-        console.error(err);
+        console.error('Error al detener escáner:', err);
       });
       
       // Registrar asistencia
@@ -312,6 +317,8 @@ prueba;
         qrData: qrData
       };
       
+      console.log('Enviando datos:', data);
+      
       fetch(SCRIPT_URL, {
         method: 'POST',
         headers: {
@@ -321,7 +328,9 @@ prueba;
         mode: 'no-cors'
       })
       .then(() => {
+        console.log('Registro enviado');
         showMessage('✓ Registrado exitosamente', 'success');
+        
         // Limpiar campos después de 3 segundos
         setTimeout(() => {
           document.getElementById('nombre').value = '';
@@ -329,8 +338,8 @@ prueba;
         }, 3000);
       })
       .catch(error => {
+        console.error('Error al registrar:', error);
         showMessage('Error al registrar. Intenta nuevamente.', 'error');
-        console.error('Error:', error);
       });
     }
     
@@ -346,8 +355,10 @@ prueba;
         }, 5000);
       }
     }
+    
+    // Log inicial para confirmar que el script cargó
+    console.log('Sistema de asistencia QR cargado correctamente');
+    console.log('Device ID:', deviceId);
   </script>
 </body>
 </html>
-
-
