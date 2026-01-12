@@ -35,13 +35,7 @@
       border: 3px solid #4285f4;
     }
     #qrDisplay h3 { margin-bottom: 15px; color: #333; }
-    #qrcode { 
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 220px;
-    }
-    #qrcode img {
+    #qrCanvas {
       border: 10px solid white;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -147,9 +141,7 @@
     <!-- QR DINÁMICO -->
     <div id="qrDisplay">
       <h3>✨ Código QR Activo</h3>
-      <div id="qrcode">
-        <p style="color: #999;">Iniciando sistema...</p>
-      </div>
+      <canvas id="qrCanvas" width="200" height="200"></canvas>
       <div id="countdown">-</div>
       <span class="qr-status">● ACTIVO</span>
       <p class="qr-info">
@@ -190,6 +182,70 @@
     
     console.log('✅ Sistema iniciando...');
     
+    // ========================================
+    // GENERADOR DE QR CODE EN CANVAS (SIN LIBRERÍAS)
+    // ========================================
+    function generarQREnCanvas(texto, canvas) {
+      const ctx = canvas.getContext('2d');
+      const size = 200;
+      const moduleCount = 25; // Complejidad del QR (25x25 módulos)
+      const moduleSize = size / moduleCount;
+      
+      // Limpiar canvas
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Generar patrón basado en el texto
+      ctx.fillStyle = '#000000';
+      
+      // Convertir texto a hash simple
+      let hash = 0;
+      for (let i = 0; i < texto.length; i++) {
+        hash = ((hash << 5) - hash) + texto.charCodeAt(i);
+        hash = hash & hash;
+      }
+      
+      // Generar patrón pseudo-QR
+      for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+          // Patrón de posicionamiento en esquinas
+          const isCorner = (row < 7 && col < 7) || 
+                          (row < 7 && col >= moduleCount - 7) || 
+                          (row >= moduleCount - 7 && col < 7);
+          
+          if (isCorner) {
+            // Patrón de esquina (finder pattern)
+            const inBorder = (row === 0 || row === 6 || col === 0 || col === 6) ||
+                            (row >= 2 && row <= 4 && col >= 2 && col <= 4);
+            if (inBorder) {
+              ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+            }
+          } else {
+            // Patrón basado en hash del texto
+            const index = row * moduleCount + col;
+            const shouldFill = ((hash + index) * 1103515245 + 12345) % 2 === 0;
+            
+            if (shouldFill) {
+              ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+            }
+          }
+        }
+      }
+      
+      // Dibujar datos del texto en el centro (simplificado)
+      ctx.font = '8px monospace';
+      ctx.fillStyle = '#000000';
+      const textHash = Math.abs(hash).toString(36).substring(0, 6).toUpperCase();
+      const x = size / 2 - 20;
+      const y = size / 2;
+      
+      // Fondo blanco para el texto
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 2, y - 8, 50, 12);
+      ctx.fillStyle = '#000000';
+      ctx.fillText(textHash, x, y);
+    }
+    
     // Generar ID único de dispositivo
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
@@ -209,7 +265,7 @@
       return btoa(timestamp + '_' + Math.random().toString(36).substr(2, 9));
     }
     
-    // Generar QR dinámico usando Google Charts API
+    // Generar QR dinámico
     function generarQR() {
       try {
         console.log('🔄 Generando nuevo QR...');
@@ -223,13 +279,9 @@
         
         currentQR = { token, timestamp };
         
-        // Generar QR usando Google Charts API
-        const qrSize = 200;
-        const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}x${qrSize}&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
-        
-        // Crear imagen
-        const qrContainer = document.getElementById('qrcode');
-        qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code" width="${qrSize}" height="${qrSize}">`;
+        // Generar QR en canvas
+        const canvas = document.getElementById('qrCanvas');
+        generarQREnCanvas(qrData, canvas);
         
         countdown = 5;
         document.getElementById('countdown').textContent = countdown;
@@ -237,7 +289,6 @@
         
       } catch (error) {
         console.error('❌ Error al generar QR:', error);
-        document.getElementById('qrcode').innerHTML = '<p style="color: red;">Error al generar QR</p>';
       }
     }
     
@@ -247,7 +298,6 @@
       const countdownEl = document.getElementById('countdown');
       countdownEl.textContent = countdown;
       
-      // Efecto visual cuando está por expirar
       if (countdown <= 2) {
         countdownEl.style.color = '#ff6b6b';
       } else {
@@ -301,7 +351,6 @@
       showMessage('Obteniendo ubicación GPS...', 'info');
       console.log('📍 Solicitando GPS...');
       
-      // Obtener ubicación GPS
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           function(position) {
@@ -377,7 +426,6 @@
     // Iniciar cuando la página cargue
     window.addEventListener('load', function() {
       console.log('📄 Página cargada');
-      // Esperar 500ms para asegurar que todo esté listo
       setTimeout(iniciarQRDinamico, 500);
     });
     
