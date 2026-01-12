@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; margin-bottom: 30px; }
+    .config-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #667eea; }
+    input:checked + .slider:before { transform: translateX(26px); }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #555;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover { opacity: 0.9; }
+    .message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .coords-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Panel de Administración</h1>
+    
+    <div class="config-section">
+      <h2>Configuración GPS</h2>
+      <div style="display: flex; align-items: center; gap: 15px; margin: 20px 0;">
+        <label class="switch">
+          <input type="checkbox" id="gpsToggle">
+          <span class="slider"></span>
+        </label>
+        <span id="gpsStatus">GPS Deshabilitado</span>
+      </div>
+      
+      <div id="coordsConfig" style="display: none;">
+        <h3 style="margin-bottom: 15px;">Coordenadas del Cuadrante (4 puntos)</h3>
+        <div class="coords-grid">
+          <div class="form-group">
+            <label>Punto 1 - Latitud:</label>
+            <input type="number" id="lat1" step="0.000001" placeholder="-33.4489">
+          </div>
+          <div class="form-group">
+            <label>Punto 1 - Longitud:</label>
+            <input type="number" id="lon1" step="0.000001" placeholder="-70.6693">
+          </div>
+          
+          <div class="form-group">
+            <label>Punto 2 - Latitud:</label>
+            <input type="number" id="lat2" step="0.000001" placeholder="-33.4489">
+          </div>
+          <div class="form-group">
+            <label>Punto 2 - Longitud:</label>
+            <input type="number" id="lon2" step="0.000001" placeholder="-70.6593">
+          </div>
+          
+          <div class="form-group">
+            <label>Punto 3 - Latitud:</label>
+            <input type="number" id="lat3" step="0.000001" placeholder="-33.4389">
+          </div>
+          <div class="form-group">
+            <label>Punto 3 - Longitud:</label>
+            <input type="number" id="lon3" step="0.000001" placeholder="-70.6593">
+          </div>
+          
+          <div class="form-group">
+            <label>Punto 4 - Latitud:</label>
+            <input type="number" id="lat4" step="0.000001" placeholder="-33.4389">
+          </div>
+          <div class="form-group">
+            <label>Punto 4 - Longitud:</label>
+            <input type="number" id="lon4" step="0.000001" placeholder="-70.6693">
+          </div>
+        </div>
+        
+        <p style="margin-top: 15px; font-size: 12px; color: #666;">
+          💡 Tip: Usa <a href="https://www.google.com/maps" target="_blank">Google Maps</a> para obtener las coordenadas. Haz clic derecho en el mapa y selecciona "¿Qué hay aquí?"
+        </p>
+      </div>
+    </div>
+    
+    <button onclick="guardarConfig()">💾 Guardar Configuración</button>
+    
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ⚠️ REEMPLAZA CON TU URL DE APPS SCRIPT ⚠️
+    // ==========================================
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx192RpgPUlbn7Yp5n0Hcn53Q4S69bLlfIi7vas5G_Dod1i8dGsgkLW1-11gewO-4k/exec';
+    
+    const gpsToggle = document.getElementById('gpsToggle');
+    const gpsStatus = document.getElementById('gpsStatus');
+    const coordsConfig = document.getElementById('coordsConfig');
+    
+    // Toggle GPS
+    gpsToggle.addEventListener('change', function() {
+      if (this.checked) {
+        gpsStatus.textContent = 'GPS Habilitado';
+        coordsConfig.style.display = 'block';
+      } else {
+        gpsStatus.textContent = 'GPS Deshabilitado';
+        coordsConfig.style.display = 'none';
+      }
+    });
+    
+    // Cargar configuración actual
+    function cargarConfig() {
+      fetch(SCRIPT_URL + '?action=get_config')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            gpsToggle.checked = data.gpsHabilitado;
+            gpsToggle.dispatchEvent(new Event('change'));
+            
+            if (data.coordenadas && data.coordenadas.length === 4) {
+              document.getElementById('lat1').value = data.coordenadas[0].lat;
+              document.getElementById('lon1').value = data.coordenadas[0].lon;
+              document.getElementById('lat2').value = data.coordenadas[1].lat;
+              document.getElementById('lon2').value = data.coordenadas[1].lon;
+              document.getElementById('lat3').value = data.coordenadas[2].lat;
+              document.getElementById('lon3').value = data.coordenadas[2].lon;
+              document.getElementById('lat4').value = data.coordenadas[3].lat;
+              document.getElementById('lon4').value = data.coordenadas[3].lon;
+            }
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    // Guardar configuración
+    function guardarConfig() {
+      const config = {
+        action: 'guardar_config',
+        gpsHabilitado: gpsToggle.checked,
+        punto1_lat: parseFloat(document.getElementById('lat1').value) || 0,
+        punto1_lon: parseFloat(document.getElementById('lon1').value) || 0,
+        punto2_lat: parseFloat(document.getElementById('lat2').value) || 0,
+        punto2_lon: parseFloat(document.getElementById('lon2').value) || 0,
+        punto3_lat: parseFloat(document.getElementById('lat3').value) || 0,
+        punto3_lon: parseFloat(document.getElementById('lon3').value) || 0,
+        punto4_lat: parseFloat(document.getElementById('lat4').value) || 0,
+        punto4_lon: parseFloat(document.getElementById('lon4').value) || 0
+      };
+      
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(config)
+      })
+        .then(response => response.json())
+        .then(data => {
+          const msg = document.getElementById('message');
+          msg.textContent = data.message;
+          msg.className = 'message ' + (data.success ? 'success' : 'error');
+          msg.style.display = 'block';
+          
+          setTimeout(() => {
+            msg.style.display = 'none';
+          }, 3000);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error al guardar la configuración');
+        });
+    }
+    
+    // Cargar al iniciar
+    cargarConfig();
+  </script>
+</body>
+</html>
