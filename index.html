@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Asistencia</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -29,26 +27,29 @@
     .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
     
     #qrDisplay {
-      background: white;
-      padding: 20px;
+      background: #f8f9fa;
+      padding: 30px;
       border-radius: 10px;
       margin: 20px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      text-align: center;
       border: 3px solid #4285f4;
     }
-    #qrcode { margin: 10px 0; }
+    #qrDisplay h3 { margin-bottom: 15px; color: #333; }
+    #qrcode { 
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+    }
     #countdown {
-      font-size: 24px;
+      font-size: 32px;
       font-weight: bold;
       color: #667eea;
-      margin-top: 10px;
+      margin: 15px 0;
     }
     .qr-info {
-      font-size: 12px;
+      font-size: 13px;
       color: #666;
-      text-align: center;
       margin-top: 10px;
     }
     
@@ -67,7 +68,6 @@
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    #reader { margin: 20px 0; border-radius: 10px; overflow: hidden; display: none; }
     button {
       width: 100%;
       padding: 16px;
@@ -114,30 +114,34 @@
       padding: 10px;
       background: #f8f9fa;
       border-radius: 8px;
+      word-break: break-all;
     }
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
+    .debug {
+      font-size: 11px;
+      color: #666;
+      background: #f1f3f5;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>📱 Registro de Asistencia</h1>
-    <p class="subtitle">Sistema con QR Dinámico y GPS</p>
+    <p class="subtitle">Sistema con QR Dinámico</p>
     
     <!-- QR DINÁMICO -->
     <div id="qrDisplay">
-      <h3 style="margin-bottom: 10px;">Código QR Actual</h3>
-      <div id="qrcode"></div>
-      <div id="countdown">5</div>
-      <p class="qr-info">⏱️ El código se actualiza cada 5 segundos<br>Escanea solo el código actual</p>
+      <h3>Código QR Actual</h3>
+      <div id="qrcode">
+        <p style="color: #999;">Generando código...</p>
+      </div>
+      <div id="countdown">-</div>
+      <p class="qr-info">⏱️ El código se actualiza cada 5 segundos</p>
     </div>
     
     <div class="form-group">
@@ -150,15 +154,18 @@
       <input type="text" id="patente" placeholder="Ej: ABC-123" required style="text-transform: uppercase;">
     </div>
     
-    <button id="scanBtn">📷 Escanear Código QR</button>
+    <button id="registrarBtn">✓ Registrar Asistencia (SIN CÁMARA - Prueba)</button>
     
-    <div id="reader"></div>
     <div id="message" class="message"></div>
+    <div id="debug" class="debug"></div>
     
     <div class="device-id">
-      🔒 ID del Dispositivo: <span id="deviceId"></span>
+      🔒 ID: <span id="deviceId"></span>
     </div>
   </div>
+
+  <!-- Librería QR alternativa más confiable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
     // ==========================================
@@ -166,213 +173,16 @@
     // ==========================================
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx192RpgPUlbn7Yp5n0Hcn53Q4S69bLlfIi7vas5G_Dod1i8dGsgkLW1-11gewO-4k/exec';
     
-    let html5QrCode = null;
-    let isScanning = false;
     let currentQR = null;
     let countdown = 5;
     let qrInterval = null;
     let countdownInterval = null;
+    let qrCodeObj = null;
     
-    // Generar ID único de dispositivo
-    function getDeviceId() {
-      let deviceId = localStorage.getItem('deviceId');
-      if (!deviceId) {
-        deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('deviceId', deviceId);
-      }
-      return deviceId;
-    }
-    
-    const deviceId = getDeviceId();
-    document.getElementById('deviceId').textContent = deviceId;
-    
-    // Generar token QR
-    function generarTokenQR(timestamp) {
-      const secret = 'MI_CLAVE_SECRETA_123'; // Debe coincidir con el backend
-      const data = timestamp + secret;
-      return btoa(timestamp + '-' + data.substring(0, 16));
-    }
-    
-    // Generar QR dinámico
-    function generarQR() {
-      const timestamp = new Date().getTime();
-      const token = generarTokenQR(timestamp);
-      const qrData = JSON.stringify({
-        token: token,
-        timestamp: timestamp
-      });
-      
-      currentQR = { token, timestamp };
-      
-      // Limpiar QR anterior
-      document.getElementById('qrcode').innerHTML = '';
-      
-      // Generar nuevo QR
-      new QRCode(document.getElementById('qrcode'), {
-        text: qrData,
-        width: 200,
-        height: 200,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-      });
-      
-      countdown = 5;
-      document.getElementById('countdown').textContent = countdown;
-    }
-    
-    // Actualizar countdown
-    function actualizarCountdown() {
-      countdown--;
-      document.getElementById('countdown').textContent = countdown;
-      
-      if (countdown <= 0) {
-        generarQR();
-      }
-    }
-    
-    // Iniciar QR dinámico
-    function iniciarQRDinamico() {
-      generarQR();
-      qrInterval = setInterval(generarQR, 5000);
-      countdownInterval = setInterval(actualizarCountdown, 1000);
-    }
-    
-    // Convertir patente a mayúsculas
-    document.getElementById('patente').addEventListener('input', function(e) {
-      this.value = this.value.toUpperCase();
-    });
-    
-    // Botón de escaneo
-    document.getElementById('scanBtn').addEventListener('click', startScan);
-    
-    function startScan() {
-      const nombre = document.getElementById('nombre').value.trim();
-      const patente = document.getElementById('patente').value.trim();
-      
-      if (!nombre) {
-        showMessage('Por favor ingresa tu nombre', 'error');
-        return;
-      }
-      
-      if (!patente) {
-        showMessage('Por favor ingresa tu patente', 'error');
-        return;
-      }
-      
-      if (!isScanning) {
-        document.getElementById('reader').style.display = 'block';
-        html5QrCode = new Html5Qrcode("reader");
-        
-        html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          onScanSuccess,
-          () => {}
-        ).then(() => {
-          isScanning = true;
-          document.getElementById('scanBtn').innerHTML = '<span class="loading"></span> Escaneando...';
-          document.getElementById('scanBtn').disabled = true;
-          showMessage('Apunta la cámara al código QR', 'info');
-        }).catch(err => {
-          showMessage('Error al acceder a la cámara', 'error');
-          console.error(err);
-        });
-      }
-    }
-    
-    function onScanSuccess(decodedText) {
-      console.log('QR escaneado:', decodedText);
-      
-      html5QrCode.stop().then(() => {
-        isScanning = false;
-        document.getElementById('reader').style.display = 'none';
-        document.getElementById('scanBtn').innerHTML = '📷 Escanear Código QR';
-        document.getElementById('scanBtn').disabled = false;
-      });
-      
-      try {
-        const qrData = JSON.parse(decodedText);
-        registrarAsistencia(qrData.token, qrData.timestamp);
-      } catch (e) {
-        showMessage('QR inválido. Escanea el código mostrado en pantalla.', 'error');
-      }
-    }
-    
-    function registrarAsistencia(qrToken, timestamp) {
-      const nombre = document.getElementById('nombre').value.trim();
-      const patente = document.getElementById('patente').value.trim().toUpperCase();
-      
-      showMessage('Obteniendo ubicación GPS...', 'info');
-      
-      // Obtener ubicación GPS
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            enviarRegistro(qrToken, timestamp, nombre, patente, position.coords.latitude, position.coords.longitude);
-          },
-          function(error) {
-            console.log('Error GPS:', error);
-            enviarRegistro(qrToken, timestamp, nombre, patente, null, null);
-          }
-        );
-      } else {
-        enviarRegistro(qrToken, timestamp, nombre, patente, null, null);
-      }
-    }
-    
-    function enviarRegistro(qrToken, timestamp, nombre, patente, lat, lon) {
-      showMessage('Registrando asistencia...', 'info');
-      
-      const url = SCRIPT_URL + 
-                  '?action=registrar' +
-                  '&deviceId=' + encodeURIComponent(deviceId) +
-                  '&nombre=' + encodeURIComponent(nombre) +
-                  '&patente=' + encodeURIComponent(patente) +
-                  '&qrToken=' + encodeURIComponent(qrToken) +
-                  '&timestamp=' + encodeURIComponent(timestamp) +
-                  (lat ? '&lat=' + lat : '') +
-                  (lon ? '&lon=' + lon : '');
-      
-      console.log('Enviando registro...');
-      
-      fetch(url, { method: 'GET', redirect: 'follow' })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Respuesta:', data);
-          
-          if (data.success) {
-            showMessage(data.message, 'success');
-            setTimeout(() => {
-              document.getElementById('nombre').value = '';
-              document.getElementById('patente').value = '';
-            }, 3000);
-          } else {
-            showMessage(data.message, 'warning');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          showMessage('Error al registrar. Intenta nuevamente.', 'error');
-        });
-    }
-    
-    function showMessage(text, type) {
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = text;
-      messageDiv.className = 'message ' + type;
-      messageDiv.style.display = 'block';
-      
-      if (type !== 'info') {
-        setTimeout(() => {
-          messageDiv.style.display = 'none';
-        }, 6000);
-      }
-    }
-    
-    // Iniciar al cargar la página
-    iniciarQRDinamico();
-    console.log('✅ Sistema iniciado. Device ID:', deviceId);
-  </script>
-</body>
-</html>
+    // Debug log
+    function log(msg) {
+      console.log(msg);
+      const debugDiv = document.getElementById('debug');
+      debugDiv.style.display = 'block';
+      debugDiv.innerHTML += msg + '<br>';
+      debugDiv.scrollTop = debugDiv.s
