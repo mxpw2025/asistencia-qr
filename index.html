@@ -36,21 +36,42 @@
     }
     #qrDisplay h3 { margin-bottom: 15px; color: #333; }
     #qrcode { 
-      display: inline-block;
-      padding: 20px;
-      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 220px;
+    }
+    #qrcode img {
+      border: 10px solid white;
       border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     #countdown {
-      font-size: 32px;
+      font-size: 48px;
       font-weight: bold;
       color: #667eea;
       margin: 15px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .qr-info {
       font-size: 13px;
       color: #666;
       margin-top: 10px;
+      line-height: 1.6;
+    }
+    .qr-status {
+      display: inline-block;
+      padding: 5px 15px;
+      background: #28a745;
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-top: 10px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
     
     .form-group { margin-bottom: 20px; }
@@ -116,17 +137,6 @@
       border-radius: 8px;
       word-break: break-all;
     }
-    .debug {
-      font-size: 11px;
-      color: #666;
-      background: #f1f3f5;
-      padding: 10px;
-      border-radius: 5px;
-      margin-top: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -136,12 +146,16 @@
     
     <!-- QR DINÁMICO -->
     <div id="qrDisplay">
-      <h3>Código QR Actual</h3>
+      <h3>✨ Código QR Activo</h3>
       <div id="qrcode">
-        <p style="color: #999;">Generando código...</p>
+        <p style="color: #999;">Iniciando sistema...</p>
       </div>
       <div id="countdown">-</div>
-      <p class="qr-info">⏱️ El código se actualiza cada 5 segundos</p>
+      <span class="qr-status">● ACTIVO</span>
+      <p class="qr-info">
+        ⏱️ Código válido por <strong>5 segundos</strong><br>
+        🔄 Se renueva automáticamente
+      </p>
     </div>
     
     <div class="form-group">
@@ -154,18 +168,14 @@
       <input type="text" id="patente" placeholder="Ej: ABC-123" required style="text-transform: uppercase;">
     </div>
     
-    <button id="registrarBtn">✓ Registrar Asistencia (SIN CÁMARA - Prueba)</button>
+    <button id="registrarBtn">✓ Registrar con QR Actual</button>
     
     <div id="message" class="message"></div>
-    <div id="debug" class="debug"></div>
     
     <div class="device-id">
-      🔒 ID: <span id="deviceId"></span>
+      🔒 ID Dispositivo: <span id="deviceId"></span>
     </div>
   </div>
-
-  <!-- Librería QR alternativa más confiable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script>
     // ==========================================
@@ -177,12 +187,201 @@
     let countdown = 5;
     let qrInterval = null;
     let countdownInterval = null;
-    let qrCodeObj = null;
     
-    // Debug log
-    function log(msg) {
-      console.log(msg);
-      const debugDiv = document.getElementById('debug');
-      debugDiv.style.display = 'block';
-      debugDiv.innerHTML += msg + '<br>';
-      debugDiv.scrollTop = debugDiv.s
+    console.log('✅ Sistema iniciando...');
+    
+    // Generar ID único de dispositivo
+    function getDeviceId() {
+      let deviceId = localStorage.getItem('deviceId');
+      if (!deviceId) {
+        deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
+      }
+      return deviceId;
+    }
+    
+    const deviceId = getDeviceId();
+    document.getElementById('deviceId').textContent = deviceId;
+    console.log('🔑 Device ID:', deviceId);
+    
+    // Generar token simple
+    function generarToken(timestamp) {
+      return btoa(timestamp + '_' + Math.random().toString(36).substr(2, 9));
+    }
+    
+    // Generar QR dinámico usando Google Charts API
+    function generarQR() {
+      try {
+        console.log('🔄 Generando nuevo QR...');
+        
+        const timestamp = new Date().getTime();
+        const token = generarToken(timestamp);
+        const qrData = JSON.stringify({
+          token: token,
+          timestamp: timestamp
+        });
+        
+        currentQR = { token, timestamp };
+        
+        // Generar QR usando Google Charts API
+        const qrSize = 200;
+        const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${qrSize}x${qrSize}&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
+        
+        // Crear imagen
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code" width="${qrSize}" height="${qrSize}">`;
+        
+        countdown = 5;
+        document.getElementById('countdown').textContent = countdown;
+        console.log('✅ QR generado correctamente');
+        
+      } catch (error) {
+        console.error('❌ Error al generar QR:', error);
+        document.getElementById('qrcode').innerHTML = '<p style="color: red;">Error al generar QR</p>';
+      }
+    }
+    
+    // Actualizar countdown
+    function actualizarCountdown() {
+      countdown--;
+      const countdownEl = document.getElementById('countdown');
+      countdownEl.textContent = countdown;
+      
+      // Efecto visual cuando está por expirar
+      if (countdown <= 2) {
+        countdownEl.style.color = '#ff6b6b';
+      } else {
+        countdownEl.style.color = '#667eea';
+      }
+      
+      if (countdown <= 0) {
+        generarQR();
+      }
+    }
+    
+    // Iniciar QR dinámico
+    function iniciarQRDinamico() {
+      console.log('🚀 Iniciando QR dinámico...');
+      generarQR();
+      qrInterval = setInterval(generarQR, 5000);
+      countdownInterval = setInterval(actualizarCountdown, 1000);
+      console.log('✅ QR dinámico iniciado');
+    }
+    
+    // Convertir patente a mayúsculas
+    document.getElementById('patente').addEventListener('input', function(e) {
+      this.value = this.value.toUpperCase();
+    });
+    
+    // Botón de registro
+    document.getElementById('registrarBtn').addEventListener('click', function() {
+      const nombre = document.getElementById('nombre').value.trim();
+      const patente = document.getElementById('patente').value.trim();
+      
+      if (!nombre) {
+        showMessage('Por favor ingresa tu nombre', 'error');
+        return;
+      }
+      
+      if (!patente) {
+        showMessage('Por favor ingresa tu patente', 'error');
+        return;
+      }
+      
+      if (!currentQR) {
+        showMessage('Esperando código QR...', 'warning');
+        return;
+      }
+      
+      console.log('📤 Enviando registro...');
+      registrarAsistencia(currentQR.token, currentQR.timestamp, nombre, patente);
+    });
+    
+    function registrarAsistencia(qrToken, timestamp, nombre, patente) {
+      showMessage('Obteniendo ubicación GPS...', 'info');
+      console.log('📍 Solicitando GPS...');
+      
+      // Obtener ubicación GPS
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            console.log('✅ GPS obtenido:', position.coords.latitude, position.coords.longitude);
+            enviarRegistro(qrToken, timestamp, nombre, patente, position.coords.latitude, position.coords.longitude);
+          },
+          function(error) {
+            console.log('⚠️ GPS no disponible:', error.message);
+            enviarRegistro(qrToken, timestamp, nombre, patente, null, null);
+          },
+          { timeout: 5000 }
+        );
+      } else {
+        console.log('⚠️ Navegador no soporta GPS');
+        enviarRegistro(qrToken, timestamp, nombre, patente, null, null);
+      }
+    }
+    
+    function enviarRegistro(qrToken, timestamp, nombre, patente, lat, lon) {
+      showMessage('Registrando asistencia...', 'info');
+      
+      const url = SCRIPT_URL + 
+                  '?action=registrar' +
+                  '&deviceId=' + encodeURIComponent(deviceId) +
+                  '&nombre=' + encodeURIComponent(nombre) +
+                  '&patente=' + encodeURIComponent(patente) +
+                  '&qrToken=' + encodeURIComponent(qrToken) +
+                  '&timestamp=' + encodeURIComponent(timestamp) +
+                  (lat ? '&lat=' + lat : '') +
+                  (lon ? '&lon=' + lon : '');
+      
+      console.log('🌐 Enviando a:', url.substring(0, 100) + '...');
+      
+      fetch(url, { method: 'GET', redirect: 'follow' })
+        .then(response => {
+          console.log('📥 Respuesta recibida:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('📊 Datos:', data);
+          
+          if (data.success) {
+            showMessage(data.message, 'success');
+            console.log('✅ ÉXITO:', data.message);
+            setTimeout(() => {
+              document.getElementById('nombre').value = '';
+              document.getElementById('patente').value = '';
+            }, 3000);
+          } else {
+            showMessage(data.message, 'warning');
+            console.log('⚠️ ADVERTENCIA:', data.message);
+          }
+        })
+        .catch(error => {
+          console.error('❌ ERROR:', error);
+          showMessage('Error al registrar. Revisa la consola (F12)', 'error');
+        });
+    }
+    
+    function showMessage(text, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = text;
+      messageDiv.className = 'message ' + type;
+      messageDiv.style.display = 'block';
+      
+      if (type !== 'info') {
+        setTimeout(() => {
+          messageDiv.style.display = 'none';
+        }, 6000);
+      }
+    }
+    
+    // Iniciar cuando la página cargue
+    window.addEventListener('load', function() {
+      console.log('📄 Página cargada');
+      // Esperar 500ms para asegurar que todo esté listo
+      setTimeout(iniciarQRDinamico, 500);
+    });
+    
+    console.log('✅ Script cargado');
+  </script>
+</body>
+</html>
